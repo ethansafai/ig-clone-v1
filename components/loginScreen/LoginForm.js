@@ -5,13 +5,13 @@ import {
   StyleSheet,
   Pressable,
   TouchableOpacity,
-  Alert
+  Alert,
 } from "react-native";
 import React, { useState } from "react";
 import { Formik } from "formik";
 import * as Yup from "yup";
 import Validator from "email-validator";
-import firebase from "../../firebase";
+import { firebase } from "../../firebase";
 
 const LoginForm = ({ navigation }) => {
   const LoginFormSchema = Yup.object().shape({
@@ -21,12 +21,22 @@ const LoginForm = ({ navigation }) => {
       .min(8, "Your password must contain at least 8 characters"),
   });
 
-  const onLogin = async(email, password) => {
+  const onLogin = async (email, password) => {
     try {
       await firebase.auth().signInWithEmailAndPassword(email, password);
       console.log(`Firebase login successful, ${email} ${password}`);
     } catch (error) {
-      Alert.alert(error);
+      Alert.alert("Error", error.message.slice(10, error.message.length - 1), [
+        {
+          text: "OK",
+          onPress: () => console.log("OK"),
+          style: "cancel",
+        },
+        {
+          text: "Sign Up",
+          onPress: () => navigation.push("SignupScreen"),
+        },
+      ]);
     }
   };
 
@@ -35,7 +45,7 @@ const LoginForm = ({ navigation }) => {
       <Formik
         initialValues={{ email: "", password: "" }}
         onSubmit={(values) => {
-          console.log(values);
+          onLogin(values.email, values.password);
         }}
         validationSchema={LoginFormSchema}
         validateOnMount={true}

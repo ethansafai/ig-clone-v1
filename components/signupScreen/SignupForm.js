@@ -1,4 +1,5 @@
 import {
+  Alert,
   View,
   Text,
   TextInput,
@@ -10,6 +11,7 @@ import React, { useState } from "react";
 import { Formik } from "formik";
 import * as Yup from "yup";
 import Validator from "email-validator";
+import { firebase, db } from "../../firebase";
 
 const SignupForm = ({ navigation }) => {
   const SignupFormSchema = Yup.object().shape({
@@ -20,12 +22,44 @@ const SignupForm = ({ navigation }) => {
       .min(8, "Your password must contain at least 8 characters"),
   });
 
+  const getRandomProfilePicture = async () => {
+    const response = await fetch("https://randomuser.me/api");
+    const data = await response.json();
+    return data.results[0].picture.large;
+  };
+
+  const onSignUp = async (email, username, password) => {
+    try {
+      const authUser = await firebase.auth().createUserWithEmailAndPassword(email, password);
+
+      db.collection("users").doc(authUser.user.email).set({
+        owner_uid: authUser.user.uid,
+        username: username,
+        email: authUser.user.email,
+        profile_picture: await getRandomProfilePicture(),
+      });
+
+      console.log("User successfully added to firebase.");
+      Alert.alert("Success", "Account created",
+      [
+        {
+          text: "OK",
+          style: "cancel",
+          onPress: () => console.log("OK"),
+        },
+      ]
+      );
+    } catch (error) {
+      Alert.alert("Error", error.message.slice(10, error.message.length - 1));
+    }
+  };
+
   return (
     <View style={styles.wrapper}>
       <Formik
         initialValues={{ email: "", username: "", password: "" }}
         onSubmit={(values) => {
-          console.log(values);
+          onSignUp(values.email, values.username, values.password)
         }}
         validationSchema={SignupFormSchema}
         validateOnMount={true}

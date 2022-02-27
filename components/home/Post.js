@@ -1,14 +1,29 @@
-import {
-  View,
-  Text,
-  StyleSheet,
-  Image,
-  ScrollView,
-  TouchableOpacity,
-} from "react-native";
+import { View, Text, StyleSheet, Image, TouchableOpacity } from "react-native";
 import React from "react";
-import { POSTS } from "../../data/posts";
 import { Divider } from "react-native-elements";
+import { firebase, db } from "../../firebase";
+
+const handleLike = (post) => {
+  const currentLikeStatus = !post.likes_by_users.includes(
+    firebase.auth().currentUser.email
+  );
+
+  db.collection("users")
+    .doc(post.owner_email)
+    .collection("posts")
+    .doc(post.id)
+    .update({
+      likes_by_users: currentLikeStatus
+        ? firebase.firestore.FieldValue.arrayUnion(
+            firebase.auth().currentUser.email
+          )
+        : firebase.firestore.FieldValue.arrayRemove(
+            firebase.auth().currentUser.email
+          ),
+    })
+    .then(() => console.log("Document successfully updated!"))
+    .catch((error) => console.log(error));
+};
 
 const Post = ({ post }) => {
   return (
@@ -73,7 +88,7 @@ const PostFooter = ({ post }) => (
           justifyContent: "space-between",
         }}
       >
-        <TouchableOpacity>
+        <TouchableOpacity onPress={handleLike(post)}>
           <Image
             style={styles.footerIcon}
             source={require("../../assets/heart.png")}
@@ -112,7 +127,10 @@ const PostFooter = ({ post }) => (
 const Likes = ({ post }) => (
   <View style={{ flexDirection: "row", marginTop: 4 }}>
     <Text style={{ color: "white", fontWeight: "600" }}>
-      {post.likes.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")} likes
+      {post.likes_by_users.length
+        .toString()
+        .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}{" "}
+      likes
     </Text>
   </View>
 );
